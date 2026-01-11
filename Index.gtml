@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>스마트폰 벽돌깨기</title>
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; background: #222; touch-action: none; }
+        canvas { display: block; background: #eee; margin: 0 auto; }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // 화면 크기 설정
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // 게임 설정
+        let ballRadius = 10;
+        let x = canvas.width / 2;
+        let y = canvas.height - 30;
+        let dx = 3;
+        let dy = -3;
+        
+        const paddleHeight = 15;
+        const paddleWidth = 80;
+        let paddleX = (canvas.width - paddleWidth) / 2;
+
+        const brickRowCount = 5;
+        const brickColumnCount = Math.floor(canvas.width / 60);
+        const brickWidth = (canvas.width / brickColumnCount) - 10;
+        const brickHeight = 20;
+        const brickPadding = 10;
+        const brickOffsetTop = 50;
+        const brickOffsetLeft = 5;
+
+        let score = 0;
+
+        const bricks = [];
+        for (let c = 0; c < brickColumnCount; c++) {
+            bricks[c] = [];
+            for (let r = 0; r < brickRowCount; r++) {
+                bricks[c][r] = { x: 0, y: 0, status: 1 };
+            }
+        }
+
+        // 터치 제어
+        document.addEventListener("touchmove", (e) => {
+            let touch = e.touches[0];
+            let relativeX = touch.clientX - canvas.offsetLeft;
+            if (relativeX > 0 && relativeX < canvas.width) {
+                paddleX = relativeX - paddleWidth / 2;
+            }
+        }, false);
+
+        function drawBall() {
+            ctx.beginPath();
+            ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
+            ctx.fillStyle = "#0095DD";
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawPaddle() {
+            ctx.beginPath();
+            ctx.rect(paddleX, canvas.height - paddleHeight - 10, paddleWidth, paddleHeight);
+            ctx.fillStyle = "#0095DD";
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawBricks() {
+            for (let c = 0; c < brickColumnCount; c++) {
+                for (let r = 0; r < brickRowCount; r++) {
+                    if (bricks[c][r].status === 1) {
+                        let brickX = (c * (brickWidth + brickPadding)) + brickOffsetLeft;
+                        let brickY = (r * (brickHeight + brickPadding)) + brickOffsetTop;
+                        bricks[c][r].x = brickX;
+                        bricks[c][r].y = brickY;
+                        ctx.beginPath();
+                        ctx.rect(brickX, brickY, brickWidth, brickHeight);
+                        ctx.fillStyle = "#0095DD";
+                        ctx.fill();
+                        ctx.closePath();
+                    }
+                }
+            }
+        }
+
+        function collisionDetection() {
+            for (let c = 0; c < brickColumnCount; c++) {
+                for (let r = 0; r < brickRowCount; r++) {
+                    let b = bricks[c][r];
+                    if (b.status === 1) {
+                        if (x > b.x && x < b.x + brickWidth && y > b.y && y < b.y + brickHeight) {
+                            dy = -dy;
+                            b.status = 0;
+                            score++;
+                            if (score === brickRowCount * brickColumnCount) {
+                                alert("승리했습니다!");
+                                document.location.reload();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBricks();
+            drawBall();
+            drawPaddle();
+            collisionDetection();
+
+            if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) dx = -dx;
+            if (y + dy < ballRadius) dy = -dy;
+            else if (y + dy > canvas.height - ballRadius - 10) {
+                if (x > paddleX && x < paddleX + paddleWidth) {
+                    dy = -dy;
+                } else {
+                    alert("게임 오버");
+                    document.location.reload();
+                }
+            }
+
+            x += dx;
+            y += dy;
+            requestAnimationFrame(draw);
+        }
+
+        draw();
+    </script>
+</body>
+</html>
