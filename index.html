@@ -5,28 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>스마트폰 벽돌깨기</title>
     <style>
-        body { margin: 0; padding: 0; overflow: hidden; background: #222; touch-action: none; }
+        body { margin: 0; padding: 0; overflow: hidden; background: #222; touch-action: none; font-family: sans-serif; }
         canvas { display: block; background: #eee; margin: 0 auto; }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
+
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
+
+        // 화면 크기 설정
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
+        // 게임 상태 관리
+        let isGameRunning = false; 
+
+        // 공 설정
         let ballRadius = 10;
         let x = canvas.width / 2;
-        let y = canvas.height - 30;
+        let y = canvas.height - 50;
         let dx = 4;
         let dy = -4;
         
+        // 패들 설정
         const paddleHeight = 15;
         const paddleWidth = 90;
         let paddleX = (canvas.width - paddleWidth) / 2;
 
+        // 벽돌 설정
         const brickRowCount = 5;
         const brickColumnCount = Math.floor(canvas.width / 65);
         const brickWidth = (canvas.width / brickColumnCount) - 10;
@@ -44,13 +53,15 @@
             }
         }
 
+        // 터치 제어
         document.addEventListener("touchmove", (e) => {
+            if (!isGameRunning) return;
             let touch = e.touches[0];
             let relativeX = touch.clientX - canvas.offsetLeft;
             if (relativeX > 0 && relativeX < canvas.width) {
                 paddleX = relativeX - paddleWidth / 2;
             }
-        }, false);
+        }, { passive: false });
 
         function drawBall() {
             ctx.beginPath();
@@ -96,7 +107,8 @@
                             b.status = 0;
                             score++;
                             if (score === brickRowCount * brickColumnCount) {
-                                alert("성공! 대단해요!");
+                                isGameRunning = false; // 게임 정지
+                                alert("🎉 축하합니다! 모든 벽돌을 깨뜨렸습니다! 🎉");
                                 document.location.reload();
                             }
                         }
@@ -106,27 +118,45 @@
         }
 
         function draw() {
+            if (!isGameRunning) return; // 게임 중지 상태면 그리지 않음
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawBricks();
             drawBall();
             drawPaddle();
             collisionDetection();
 
+            // 벽 충돌
             if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) dx = -dx;
             if (y + dy < ballRadius) dy = -dy;
             else if (y + dy > canvas.height - ballRadius - 20) {
                 if (x > paddleX && x < paddleX + paddleWidth) {
                     dy = -dy;
                 } else {
-                    alert("게임 오버! 다시 시도하세요.");
+                    isGameRunning = false; // 게임 정지
+                    alert("게임 오버! 다시 시도해보세요.");
                     document.location.reload();
+                    return;
                 }
             }
+
             x += dx;
             y += dy;
             requestAnimationFrame(draw);
         }
-        draw();
+
+        // 게임 시작 전 확인창
+        window.onload = function() {
+            if (confirm("게임을 시작할까요?")) {
+                isGameRunning = true;
+                draw();
+            } else {
+                ctx.font = "20px Arial";
+                ctx.fillStyle = "#000";
+                ctx.textAlign = "center";
+                ctx.fillText("새로고침을 눌러 게임을 시작하세요.", canvas.width/2, canvas.height/2);
+            }
+        };
     </script>
 </body>
 </html>
