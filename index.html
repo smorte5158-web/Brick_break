@@ -16,26 +16,25 @@
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
-        // 화면 크기 설정
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        // 게임 상태 관리
         let isGameRunning = false; 
 
-        // 공 설정
+        // --- 수정 가능 구역 ---
+        const paddleBottomOffset = 100; // 패들이 바닥에서 떨어지는 높이 (이 숫자를 키우면 더 위로 올라감)
+        const paddleWidth = 90;
+        const paddleHeight = 15;
+        let dx = 4; // 공의 좌우 속도
+        let dy = -4; // 공의 상하 속도
+        // ----------------------
+
         let ballRadius = 10;
         let x = canvas.width / 2;
-        let y = canvas.height - 50;
-        let dx = 4;
-        let dy = -4;
+        let y = canvas.height - paddleBottomOffset - 30; // 공 시작 위치도 패들 위로 조정
         
-        // 패들 설정
-        const paddleHeight = 15;
-        const paddleWidth = 90;
         let paddleX = (canvas.width - paddleWidth) / 2;
 
-        // 벽돌 설정
         const brickRowCount = 5;
         const brickColumnCount = Math.floor(canvas.width / 65);
         const brickWidth = (canvas.width / brickColumnCount) - 10;
@@ -53,7 +52,6 @@
             }
         }
 
-        // 터치 제어
         document.addEventListener("touchmove", (e) => {
             if (!isGameRunning) return;
             let touch = e.touches[0];
@@ -73,7 +71,8 @@
 
         function drawPaddle() {
             ctx.beginPath();
-            ctx.rect(paddleX, canvas.height - paddleHeight - 20, paddleWidth, paddleHeight);
+            // 패들의 y좌표를 paddleBottomOffset만큼 위로 설정
+            ctx.rect(paddleX, canvas.height - paddleHeight - paddleBottomOffset, paddleWidth, paddleHeight);
             ctx.fillStyle = "#0095DD";
             ctx.fill();
             ctx.closePath();
@@ -107,7 +106,7 @@
                             b.status = 0;
                             score++;
                             if (score === brickRowCount * brickColumnCount) {
-                                isGameRunning = false; // 게임 정지
+                                isGameRunning = false;
                                 alert("🎉 축하합니다! 모든 벽돌을 깨뜨렸습니다! 🎉");
                                 document.location.reload();
                             }
@@ -118,7 +117,7 @@
         }
 
         function draw() {
-            if (!isGameRunning) return; // 게임 중지 상태면 그리지 않음
+            if (!isGameRunning) return;
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawBricks();
@@ -126,14 +125,15 @@
             drawPaddle();
             collisionDetection();
 
-            // 벽 충돌
             if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) dx = -dx;
             if (y + dy < ballRadius) dy = -dy;
-            else if (y + dy > canvas.height - ballRadius - 20) {
+            // 공이 패들 높이에 도달했을 때의 판정 기준도 paddleBottomOffset을 사용하도록 수정
+            else if (y + dy > canvas.height - ballRadius - paddleBottomOffset) {
                 if (x > paddleX && x < paddleX + paddleWidth) {
                     dy = -dy;
-                } else {
-                    isGameRunning = false; // 게임 정지
+                    y = canvas.height - ballRadius - paddleBottomOffset - 1; // 공이 패들에 끼지 않게 위치 보정
+                } else if (y + dy > canvas.height - ballRadius) {
+                    isGameRunning = false;
                     alert("게임 오버! 다시 시도해보세요.");
                     document.location.reload();
                     return;
@@ -145,7 +145,6 @@
             requestAnimationFrame(draw);
         }
 
-        // 게임 시작 전 확인창
         window.onload = function() {
             if (confirm("게임을 시작할까요?")) {
                 isGameRunning = true;
